@@ -1,11 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const {
-  createPayment,
-  verifyPayment,
-} = require("../controllers/paymentController");
 
-router.post("/create", createPayment);
-router.post("/verify", verifyPayment);
+// Payment disabled (UPI manual verification only)
+router.post("/", (req, res) => {
+  res.status(400).json({
+    error: "Online payment gateway disabled",
+  });
+});
 
 module.exports = router;
