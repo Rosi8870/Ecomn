@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { IconButton } from "@mui/material";
-import { Add, Remove, Delete } from "@mui/icons-material";
+import { Add, Remove } from "@mui/icons-material";
+import { doc, getDoc } from "firebase/firestore";
 
 import {
   getCart,
@@ -14,22 +15,47 @@ import { successToast, errorToast } from "../utils/toast";
 
 import AddressModal from "../components/AddressModal";
 import UpiPaymentModal from "../components/UpiPaymentModal";
+import { db } from "../firebase";
 
 function Cart() {
   const { user } = useAuth();
 
   const [cart, setCart] = useState([]);
+  const [profile, setProfile] = useState(null);
+
   const [showAddress, setShowAddress] = useState(false);
   const [showUpi, setShowUpi] = useState(false);
   const [orderInfo, setOrderInfo] = useState(null);
 
+  const [loading, setLoading] = useState(true);
+
+  /* ================= LOAD CART + PROFILE ================= */
   useEffect(() => {
     if (!user) return;
-    getCart()
-      .then(res => setCart(res.data))
-      .catch(() => errorToast("Failed to load cart"));
+
+    const load = async () => {
+      try {
+        const [cartRes, profileSnap] = await Promise.all([
+          getCart(),
+          getDoc(doc(db, "users", user.uid)),
+        ]);
+
+        setCart(cartRes.data);
+
+        if (profileSnap.exists()) {
+          setProfile(profileSnap.data());
+        }
+      } catch {
+        errorToast("Failed to load cart");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
   }, [user]);
 
+  /* ================= GUARDS ================= */
   if (!user) {
     return (
       <div className="text-center text-white mt-24">
@@ -38,43 +64,72 @@ function Cart() {
     );
   }
 
+  if (loading) {
+    return (
+      <div className="text-center text-white mt-24">
+        Loading your cart…
+      </div>
+    );
+  }
+
+  /* ================= TOTALS ================= */
   const subtotal = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
-  const delivery = subtotal > 0 ? 0 : 0;
-  const total = subtotal + delivery;
+  const total = subtotal;
 
+  /* ================= ACTIONS ================= */
   const handleIncrease = async (item) => {
-    await updateQuantity(item.id, item.quantity + 1);
-    setCart(prev =>
-      prev.map(i =>
-        i.id === item.id
-          ? { ...i, quantity: i.quantity + 1 }
-          : i
-      )
-    );
-  };
-
-  const handleDecrease = async (item) => {
-    if (item.quantity === 1) {
-      await removeFromCart(item.id);
-      setCart(prev => prev.filter(i => i.id !== item.id));
-    } else {
-      await updateQuantity(item.id, item.quantity - 1);
+    try {
+      await updateQuantity(item.id, item.quantity + 1);
       setCart(prev =>
         prev.map(i =>
           i.id === item.id
-            ? { ...i, quantity: i.quantity - 1 }
+            ? { ...i, quantity: i.quantity + 1 }
             : i
         )
       );
+    } catch {
+      errorToast("Failed to update quantity");
     }
   };
 
+  const handleDecrease = async (item) => {
+    try {
+      if (item.quantity === 1) {
+        await removeFromCart(item.id);
+        setCart(prev => prev.filter(i => i.id !== item.id));
+      } else {
+        await updateQuantity(item.id, item.quantity - 1);
+        setCart(prev =>
+          prev.map(i =>
+            i.id === item.id
+              ? { ...i, quantity: i.quantity - 1 }
+              : i
+          )
+        );
+      }
+    } catch {
+      errorToast("Failed to update cart");
+    }
+  };
+
+  const handleRemove = async (id) => {
+    try {
+      await removeFromCart(id);
+      setCart(prev => prev.filter(i => i.id !== id));
+      successToast("Item removed");
+    } catch {
+      errorToast("Failed to remove item");
+    }
+  };
+
+  /* ================= PLACE ORDER ================= */
   const handleAddressSubmit = async (address) => {
     try {
       const txnId = `UPI_${Date.now()}`;
+
       const res = await placeOrder(
         cart,
         total,
@@ -95,16 +150,17 @@ function Cart() {
     }
   };
 
+  /* ================= UI ================= */
   return (
     <div className="max-w-7xl mx-auto px-4 pb-32 text-white">
 
-      {/* ===== HEADER ===== */}
+      {/* HEADER */}
       <h1 className="text-3xl font-bold mb-2">Your Cart</h1>
       <p className="text-gray-300 mb-8">
         {cart.length} items ready for checkout
       </p>
 
-      {/* ===== CHECKOUT STEPS ===== */}
+      {/* STEPS */}
       <div className="flex items-center gap-3 mb-10 text-sm">
         <Step active label="Cart" />
         <Line />
@@ -120,7 +176,7 @@ function Cart() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
 
-          {/* ===== CART ITEMS ===== */}
+          {/* CART ITEMS */}
           <div className="lg:col-span-2 space-y-6">
             {cart.map(item => (
               <div
@@ -129,16 +185,17 @@ function Cart() {
               >
                 <div className="flex gap-5">
 
-                  {/* Image */}
+                  {/* IMAGE */}
                   <div className="w-24 h-24 rounded-xl bg-white/10 flex items-center justify-center text-xs text-gray-400">
                     Image
                   </div>
 
-                  {/* Info */}
+                  {/* INFO */}
                   <div className="flex-1">
                     <h3 className="font-semibold text-lg">
                       {item.name}
                     </h3>
+
                     <p className="text-cyan-300 font-bold mt-1">
                       ₹{item.price}
                     </p>
@@ -159,7 +216,7 @@ function Cart() {
                       </div>
 
                       <button
-                        onClick={() => removeFromCart(item.id)}
+                        onClick={() => handleRemove(item.id)}
                         className="text-red-400 text-sm"
                       >
                         Remove
@@ -167,7 +224,7 @@ function Cart() {
                     </div>
                   </div>
 
-                  {/* Price */}
+                  {/* ITEM TOTAL */}
                   <div className="font-semibold">
                     ₹{item.price * item.quantity}
                   </div>
@@ -176,7 +233,7 @@ function Cart() {
             ))}
           </div>
 
-          {/* ===== SUMMARY ===== */}
+          {/* SUMMARY */}
           <div className="lg:sticky lg:top-24 h-fit">
             <div className="rounded-2xl bg-white/10 border border-white/20 p-6">
               <h2 className="text-xl font-bold mb-6">
@@ -186,11 +243,7 @@ function Cart() {
               <Row label="Subtotal" value={`₹${subtotal}`} />
               <Row label="Delivery" value="Free" />
               <hr className="my-4 border-white/10" />
-              <Row
-                label="Total"
-                value={`₹${total}`}
-                bold
-              />
+              <Row label="Total" value={`₹${total}`} bold />
 
               <button
                 onClick={() => setShowAddress(true)}
@@ -199,7 +252,6 @@ function Cart() {
                 Continue to Address
               </button>
 
-              {/* TRUST */}
               <p className="text-xs text-gray-300 mt-4 text-center">
                 🔒 Secure UPI • Fast Delivery • Easy Returns
               </p>
@@ -209,14 +261,16 @@ function Cart() {
         </div>
       )}
 
-      {/* MODALS */}
+      {/* ADDRESS MODAL */}
       {showAddress && (
         <AddressModal
+          profile={profile}
           onSubmit={handleAddressSubmit}
           onClose={() => setShowAddress(false)}
         />
       )}
 
+      {/* PAYMENT MODAL */}
       {showUpi && orderInfo && (
         <UpiPaymentModal
           amount={orderInfo.amount}
@@ -238,7 +292,7 @@ function Cart() {
   );
 }
 
-/* ===== SMALL UI PARTS ===== */
+/* ================= UI PARTS ================= */
 const Step = ({ label, active }) => (
   <div className={`px-4 py-1.5 rounded-full text-xs 
     ${active ? "bg-cyan-400 text-black" : "bg-white/10"}`}>

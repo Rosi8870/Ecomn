@@ -1,7 +1,17 @@
 import { X } from "lucide-react";
 import { errorToast } from "../utils/toast";
 
-export default function AddressModal({ onSubmit, onClose }) {
+export default function AddressModal({
+  profile,
+  onSubmit,
+  onClose,
+}) {
+  const isLocked =
+    profile?.address &&
+    profile?.city &&
+    profile?.pincode &&
+    profile?.name;
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -60,7 +70,9 @@ export default function AddressModal({ onSubmit, onClose }) {
             Delivery Address
           </h2>
           <p className="text-sm text-gray-300 mt-1">
-            Enter the address where you want your order delivered
+            {isLocked
+              ? "Using your saved delivery address"
+              : "Enter the address where you want your order delivered"}
           </p>
         </div>
 
@@ -69,28 +81,40 @@ export default function AddressModal({ onSubmit, onClose }) {
           <Input
             name="name"
             label="Full Name"
-            placeholder="John Doe"
+            defaultValue={profile?.name || ""}
+            disabled={isLocked}
           />
 
           <Textarea
             name="address"
             label="Full Address"
-            placeholder="House no, street, area"
+            defaultValue={profile?.address || ""}
+            style={{ resize: "none" }}
+            disabled={isLocked}
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               name="city"
               label="City"
-              placeholder="Chennai"
+              defaultValue={profile?.city || ""}
+              disabled={isLocked}
             />
             <Input
               name="pincode"
               label="Pincode"
-              placeholder="600001"
+              defaultValue={profile?.pincode || ""}
+              disabled={isLocked}
             />
           </div>
         </div>
+
+        {/* INFO */}
+        {isLocked && (
+          <p className="text-xs text-gray-400 mt-4">
+            To change address, update it from your Profile page
+          </p>
+        )}
 
         {/* ACTIONS */}
         <div className="flex justify-between items-center mt-8">
@@ -123,7 +147,7 @@ export default function AddressModal({ onSubmit, onClose }) {
 
 /* ===== INPUT COMPONENTS ===== */
 
-function Input({ label, ...props }) {
+function Input({ label, disabled, ...props }) {
   return (
     <div>
       <label className="block text-sm mb-1 text-gray-300">
@@ -131,24 +155,26 @@ function Input({ label, ...props }) {
       </label>
       <input
         {...props}
-        required
-        className="
-          w-full
-          rounded-lg
-          bg-white/10
-          border border-white/20
+        disabled={disabled}
+        className={`
+          w-full rounded-lg
           px-3 py-2
           text-white
           placeholder:text-gray-400
           focus:outline-none
           focus:border-cyan-400
-        "
+          ${
+            disabled
+              ? "bg-white/5 border border-white/10 cursor-not-allowed"
+              : "bg-white/10 border border-white/20"
+          }
+        `}
       />
     </div>
   );
 }
 
-function Textarea({ label, ...props }) {
+function Textarea({ label, disabled, ...props }) {
   return (
     <div>
       <label className="block text-sm mb-1 text-gray-300">
@@ -156,19 +182,21 @@ function Textarea({ label, ...props }) {
       </label>
       <textarea
         {...props}
-        required
         rows={3}
-        className="
-          w-full
-          rounded-lg
-          bg-white/10
-          border border-white/20
+        disabled={disabled}
+        className={`
+          w-full rounded-lg
           px-3 py-2
           text-white
           placeholder:text-gray-400
           focus:outline-none
           focus:border-cyan-400
-        "
+          ${
+            disabled
+              ? "bg-white/5 border border-white/10 cursor-not-allowed"
+              : "bg-white/10 border border-white/20"
+          }
+        `}
       />
     </div>
   );
