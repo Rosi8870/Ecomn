@@ -1,9 +1,6 @@
 import { initializeApp } from "firebase/app";
-import {
-  getAuth,
-  GoogleAuthProvider,
-  RecaptchaVerifier
-} from "firebase/auth";
+import { getAuth, GoogleAuthProvider, RecaptchaVerifier } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDyhCw-PIQM4at9PfC-fE3Va5sIPc6wHe4",
@@ -17,9 +14,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
+export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 
-/* 🔐 reCAPTCHA helper */
+/* reCAPTCHA */
 export const setupRecaptcha = () => {
   if (window.recaptchaVerifier) {
     window.recaptchaVerifier.clear();
@@ -28,8 +26,6 @@ export const setupRecaptcha = () => {
   window.recaptchaVerifier = new RecaptchaVerifier(
     auth,
     "recaptcha-container",
-    {
-      size: "invisible",
-    }
+    { size: "invisible" }
   );
 };

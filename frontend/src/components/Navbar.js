@@ -11,19 +11,20 @@ import {
 
 function Navbar() {
   const { user, logout } = useAuth();
-  const isAdmin = user?.email === "admin@mystore.com";
   const location = useLocation();
+
+  const isAdmin = user?.email === "admin@mystore.com";
 
   const isActive = (path) => location.pathname === path;
 
   const activeClass = (path) =>
     isActive(path)
-      ? "text-cyan-400 nav-item-active"
+      ? "text-cyan-400 nav-active"
       : "text-white/60 hover:text-white";
 
   return (
     <>
-      {/* ================= MOBILE DOCK ================= */}
+      {/* ================= MOBILE BOTTOM DOCK ================= */}
       <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
         <div
           className="
@@ -49,12 +50,21 @@ function Navbar() {
             />
           )}
 
+          {user && (
+            <MobileItem
+              to="/profile"
+              icon={<User size={20} />}
+              label="Profile"
+              active={activeClass("/profile")}
+            />
+          )}
+
           {isAdmin && (
             <MobileItem
               to="/admin"
               icon={<Shield size={20} />}
               label="Admin"
-              active="text-yellow-400 nav-item-active"
+              active="text-yellow-400 nav-active"
             />
           )}
 
@@ -76,7 +86,7 @@ function Navbar() {
           ) : (
             <button
               onClick={logout}
-              className="mobile-item flex flex-col items-center gap-1 text-white/60 hover:text-white"
+              className="flex flex-col items-center gap-1 text-white/60 hover:text-white"
             >
               <LogOut size={20} />
               <span className="text-[11px]">Logout</span>
@@ -111,12 +121,21 @@ function Navbar() {
             />
           )}
 
+          {user && (
+            <DesktopItem
+              to="/profile"
+              icon={<User size={18} />}
+              label="Profile"
+              active={activeClass("/profile")}
+            />
+          )}
+
           {isAdmin && (
             <DesktopItem
               to="/admin"
               icon={<Shield size={18} />}
               label="Admin"
-              active="text-yellow-400 nav-item-active"
+              active="text-yellow-400 nav-active"
             />
           )}
 
@@ -138,7 +157,7 @@ function Navbar() {
           ) : (
             <button
               onClick={logout}
-              className="nav-item flex items-center gap-2 text-white/60 hover:text-white"
+              className="flex items-center gap-2 text-white/60 hover:text-white"
             >
               <LogOut size={18} />
               Logout
@@ -155,7 +174,7 @@ function MobileItem({ to, icon, label, active }) {
   return (
     <Link
       to={to}
-      className={`mobile-item nav-item flex flex-col items-center gap-1 ${active}`}
+      className={`flex flex-col items-center gap-1 transition ${active}`}
     >
       {icon}
       <span className="text-[11px]">{label}</span>
@@ -168,7 +187,7 @@ function DesktopItem({ to, icon, label, active }) {
   return (
     <Link
       to={to}
-      className={`nav-item flex items-center gap-2 ${active}`}
+      className={`flex items-center gap-2 transition ${active}`}
     >
       {icon}
       {label}

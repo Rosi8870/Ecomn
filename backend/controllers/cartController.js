@@ -7,19 +7,24 @@ exports.getCart = async (req, res) => {
   try {
     const { userId } = req.params;
 
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
+    }
+
     const snapshot = await db
       .collection("carts")
       .where("userId", "==", userId)
       .get();
 
-    const cart = snapshot.docs.map(doc => ({
+    const cart = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
 
     res.json(cart);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("❌ GET CART ERROR:", err);
+    res.status(500).json({ error: "Failed to load cart" });
   }
 };
 
@@ -36,36 +41,40 @@ exports.addToCart = async (req, res) => {
 
     const cartRef = db.collection("carts");
 
-    // Check if product already exists in cart
     const snapshot = await cartRef
       .where("userId", "==", userId)
       .where("productId", "==", product.id)
       .get();
 
+    // 🔁 Product already in cart
     if (!snapshot.empty) {
-      // Increase quantity
       const doc = snapshot.docs[0];
+      const currentQty = doc.data().quantity || 1;
+
       await doc.ref.update({
-        quantity: doc.data().quantity + (product.quantity || 1),
+        quantity: currentQty + (Number(product.quantity) || 1),
+        updatedAt: new Date(),
       });
 
       return res.json({ message: "Cart quantity updated" });
     }
 
-    // Add new cart item
+    // ➕ New cart item
     await cartRef.add({
       userId,
       productId: product.id,
       name: product.name,
       price: product.price,
       image: product.image,
-      quantity: product.quantity || 1,
+      quantity: Number(product.quantity) || 1,
       createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
     res.status(201).json({ message: "Added to cart" });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("❌ ADD TO CART ERROR:", err);
+    res.status(500).json({ error: "Failed to add to cart" });
   }
 };
 
@@ -77,18 +86,28 @@ exports.updateCartQuantity = async (req, res) => {
     const { cartId } = req.params;
     const { quantity } = req.body;
 
-    if (!quantity || quantity < 1) {
+    const qty = Number(quantity);
+
+    if (!cartId || isNaN(qty) || qty < 1) {
       return res.status(400).json({ error: "Invalid quantity" });
     }
 
-    await db
-      .collection("carts")
-      .doc(cartId)
-      .update({ quantity });
+    const cartRef = db.collection("carts").doc(cartId);
+    const cartSnap = await cartRef.get();
 
-    res.json({ message: "Quantity updated" });
+    if (!cartSnap.exists) {
+      return res.status(404).json({ error: "Cart item not found" });
+    }
+
+    await cartRef.update({
+      quantity: qty,
+      updatedAt: new Date(),
+    });
+
+    res.json({ message: "Quantity updated", quantity: qty });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("❌ UPDATE CART ERROR:", err);
+    res.status(500).json({ error: "Failed to update quantity" });
   }
 };
 
@@ -99,13 +118,22 @@ exports.removeFromCart = async (req, res) => {
   try {
     const { cartId } = req.params;
 
-    await db
-      .collection("carts")
-      .doc(cartId)
-      .delete();
+    if (!cartId) {
+      return res.status(400).json({ error: "cartId is required" });
+    }
+
+    const cartRef = db.collection("carts").doc(cartId);
+    const cartSnap = await cartRef.get();
+
+    if (!cartSnap.exists) {
+      return res.status(404).json({ error: "Cart item not found" });
+    }
+
+    await cartRef.delete();
 
     res.json({ message: "Item removed from cart" });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("❌ REMOVE CART ERROR:", err);
+    res.status(500).json({ error: "Failed to remove item" });
   }
 };
