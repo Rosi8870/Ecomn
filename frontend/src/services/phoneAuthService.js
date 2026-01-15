@@ -1,30 +1,36 @@
 import {
+  getAuth,
   signInWithPhoneNumber,
-  RecaptchaVerifier,
+  RecaptchaVerifier
 } from "firebase/auth";
-import { auth } from "../firebase";
 
-/* ================= SETUP RECAPTCHA ================= */
-const setupRecaptcha = () => {
+const auth = getAuth();
+
+/* INIT reCAPTCHA */
+export const setupRecaptcha = () => {
   if (!window.recaptchaVerifier) {
     window.recaptchaVerifier = new RecaptchaVerifier(
       auth,
       "recaptcha-container",
       {
         size: "invisible",
+        callback: () => {
+          console.log("reCAPTCHA solved");
+        },
       }
     );
   }
-  return window.recaptchaVerifier;
 };
 
-/* ================= SEND OTP ================= */
-export const sendOtp = async (phone) => {
-  const appVerifier = setupRecaptcha();
-  return signInWithPhoneNumber(auth, phone, appVerifier);
+/* SEND OTP */
+export const sendOtp = async (phoneNumber) => {
+  setupRecaptcha();
+  const appVerifier = window.recaptchaVerifier;
+
+  return signInWithPhoneNumber(auth, phoneNumber, appVerifier);
 };
 
-/* ================= VERIFY OTP ================= */
-export const verifyOtp = (confirmationResult, otp) => {
-  return confirmationResult.confirm(otp);
+/* VERIFY OTP */
+export const verifyOtp = async (confirmationResult, code) => {
+  return confirmationResult.confirm(code);
 };
