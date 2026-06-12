@@ -79,7 +79,7 @@ export const printReceipt = (order) => {
 
     <body>
       <div class="header">
-        <div class="store">🛍 MyStore</div>
+        <div class="store">🛍 Sojan's</div>
         <div class="meta">
           <div><b>Order Date:</b> ${orderDate}</div>
           <div><b>Status:</b> ${order.status.replace("_", " ")}</div>
@@ -120,7 +120,7 @@ export const printReceipt = (order) => {
       </div>
 
       <div class="footer">
-        Thank you for shopping with MyStore
+        Thank you for shopping with Sojan's
       </div>
 
       <script>

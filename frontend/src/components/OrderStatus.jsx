@@ -21,21 +21,21 @@ function OrderStatus({ status }) {
                 <div className="flex flex-col items-center">
                   <div
                     className={`w-3 h-3 rounded-full ${
-                      completed ? "bg-cyan-400" : "bg-white/30"
+                      completed ? "bg-[#0071e3]" : "bg-[rgba(0,0,0,0.15)]"
                     }`}
                   />
                   {index !== steps.length - 1 && (
                     <div
-                      className={`w-px h-8 ${
-                        completed ? "bg-cyan-400" : "bg-white/20"
+                      className={`w-px h-8 mt-1 mb-1 ${
+                        completed ? "bg-[#0071e3]" : "bg-[rgba(0,0,0,0.1)]"
                       }`}
                     />
                   )}
                 </div>
 
                 <p
-                  className={`text-sm ${
-                    completed ? "text-cyan-300" : "text-gray-400"
+                  className={`text-[13px] font-medium ${
+                    completed ? "text-[#1d1d1f]" : "text-[#86868b]"
                   }`}
                 >
                   {step.label}
@@ -49,7 +49,7 @@ function OrderStatus({ status }) {
       {/* ================= DESKTOP (HORIZONTAL – FIXED) ================= */}
       <div className="hidden sm:block mt-6 relative">
         {/* LINE BEHIND DOTS */}
-        <div className="absolute top-2 left-0 right-0 h-px bg-white/20" />
+        <div className="absolute top-1.5 left-0 right-0 h-px bg-[rgba(0,0,0,0.1)]" />
 
         <div className="grid grid-cols-4 gap-0 relative">
           {steps.map((step, index) => {
@@ -63,14 +63,14 @@ function OrderStatus({ status }) {
                 {/* DOT */}
                 <div
                   className={`w-3 h-3 rounded-full z-10 ${
-                    completed ? "bg-cyan-400" : "bg-white/30"
+                    completed ? "bg-[#0071e3] shadow-[0_0_0_4px_rgba(0,113,227,0.1)]" : "bg-[rgba(0,0,0,0.15)]"
                   }`}
                 />
 
                 {/* LABEL */}
                 <span
-                  className={`mt-2 text-xs ${
-                    completed ? "text-cyan-300" : "text-gray-400"
+                  className={`mt-3 text-[12px] font-medium ${
+                    completed ? "text-[#1d1d1f]" : "text-[#86868b]"
                   }`}
                 >
                   {step.label}
